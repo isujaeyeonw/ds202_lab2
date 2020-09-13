@@ -1,14 +1,160 @@
 ---
-title: "Team"
+title: "team"
+author: "Jaeyeon Won, Alec Meyer"
+date: "9/9/2020"
 output: html_document
 ---
-```{r}
-choco <- read.csv("https://raw.githubusercontent.com/xdaiISU/ds202materials/master/hwlabs/data/choco.csv") 
-str(choco)
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
 ```
-Alec Meyer.<br />
-Based on the histogram, ratings are fairly left skewed resulting in higher than average ratings for the chocolates, there are though, a couple outliers around the 'one' rating.
+
+## Reading in the Data Set
 ```{r}
+#Reading in the data set
+choco <- read.csv("https://raw.githubusercontent.com/xdaiISU/ds202materials/master/hwlabs/data/choco.csv") 
+
+#Information
+str(choco) 
+```
+
+
+## Investigation of the Distribution of Ratings
+```{r}
+#Boxplot
 boxplot(choco$Rating, main="Boxplot of Chocolate Ratings")
+
+#Histogram
 hist(choco$Rating, breaks = 10, main="Histogram of Chocolate Ratings", xlab="Rating", ylab="Occurance")
 ```
+
+Based on the histogram and boxplot, ratings are fairly left skewed resulting in higher than average ratings for the chocolates. The distribution is unimodal. We cannot clearly see in the histogram, but in the boxplot, there are multiple outliers below the ratings of 2.0.
+
+
+## Investigation of the Relationship between Ratings and Cocoa Percent
+```{r}
+#Numerical Summary
+#Subsetting
+Unpleasant = choco[(choco$Rating >= 1.0) & (choco$Rating <= 1.9), ]
+Disappointing = choco[(choco$Rating >= 2.0) & (choco$Rating <= 2.9), ]
+Recommended = choco[(choco$Rating >= 3.0) & (choco$Rating <= 3.49), ]
+HighlyRecommended = choco[(choco$Rating >= 3.5) & (choco$Rating <= 3.9), ]
+Outstanding = choco[(choco$Rating >= 4.0) & (choco$Rating <= 5.0), ]
+#Saving the average cocoa percent for each subset in a vector
+mean_cocoa_percent = c(mean(Unpleasant$Cocoa_Percent), 
+                       mean(Disappointing$Cocoa_Percent), 
+                       mean(Recommended$Cocoa_Percent), 
+                       mean(HighlyRecommended$Cocoa_Percent), 
+                       mean(Outstanding$Cocoa_Percent))
+levels = c("Unpleasant", "Disappointing", "Recommended", "HighlyRecommended", "Outstanding")
+dataframe = data.frame(levels, mean_cocoa_percent)
+dataframe
+
+#Graphical Summary
+#Barplot
+levels2 = c("Unplsnt", "Disppnt", "Recmd", "hRecmd", "Outstd")
+barplot(dataframe$mean_cocoa_percent ~ levels2,
+        main = 'Barplot of the Average Cocoa Percent For Each Rating Level',
+        xlab = 'Average Cocoa Percent',
+        ylab = '',
+        horiz = TRUE,
+        las = 1)
+#Scatterplot
+plot(choco$Cocoa_Percent, choco$Rating, 
+     main = "Scatterplot of Cocoa Percent and Ratings",
+     xlab = "Cocoa Percent", ylab = "Ratings")
+```
+
+Based on the numerical and graphical analysis of the mean cocoa percent for each rating level, we can see that the lower the ratings are, the higher the mean cocoa percent is.However, this pattern is not obvious in the scatter plot since Ratings is an ordinal variable.
+
+
+## Investigation of Favorable and Unfavorable Characteristics
+```{r}
+library(dplyr)
+
+#Favorable Characteristics
+#Creating summaries
+good_Characteristics = choco %>% 
+  select(Characteristics1, Rating) %>%
+  group_by(Characteristics1) %>%
+  summarise(Average_Rating = mean(Rating)) %>%
+  arrange(desc(Average_Rating)) %>%
+  top_n(10)
+
+#Numerical summaries
+good_Characteristics
+
+
+#Unfavorable Characteristics
+#Creating summaries
+bad_Characteristics = choco %>% 
+  select(Characteristics1, Rating) %>%
+  group_by(Characteristics1) %>%
+  summarise(Average_Rating = mean(Rating)) %>%
+  arrange(Average_Rating) %>%
+  top_n(-10)
+
+#Numerical summaries
+bad_Characteristics
+```
+
+We only investigated Characteristics1 variable. According to the analysis above, we can see that the top 10 favorable characteristics are cardamon, chocolate covered banana, distinct lemon, large nibs, ligt color, mild tart, pronounced berry, simple red berry, smoth, and sweet spice. They all have an average rating of 4.0. In contrast, the bottom 10 favorable characteristics (unfavorable) are this is not chocolate, chemical, high intensity bitter, klingy, very nutty, bitter coffee flavor, fresh nibs, malitol, multiple off, flavors, and non descript. The ratings vary from 1.0 to 2.0.
+
+
+## Investigation of the Top 5 Bean Origins
+```{r}
+#Creating summaries
+origins = choco %>% 
+  select(Bean_Origin, Rating) %>%
+  group_by(Bean_Origin) %>%
+  summarise(Average_Rating = mean(Rating)) %>%
+  arrange(desc(Average_Rating)) %>%
+  top_n(5)
+
+#Numerical summaries
+origins
+
+#Graphical summaries
+levels(origins$Bean_Origin) = c("Tobago", "ST & P", "S Island", "Congo", "Thailand")
+
+barplot(origins$Average_Rating ~ levels(origins$Bean_Origin),
+        main = 'Barplot of the Average Rating Within Each Bean Origin',
+        xlab = 'Average Rating',
+        ylab = '',
+        horiz = TRUE,
+        las = 1)
+```
+
+From the information above, we can see that Tobago, Sao Tome & Principe, Solomon Islands, Congo, and Thailand have the highest average ratings among all other origins. Tobago has a mean rating of 3.652 and Thailand has that of 3.3.
+
+
+## Investigation of the Top 5 Companies
+```{r}
+#Creating summaries
+company = choco %>% 
+  select(Company, Rating) %>%
+  group_by(Company) %>%
+  summarise(Average_Rating = mean(Rating)) %>%
+  arrange(desc(Average_Rating)) %>%
+  top_n(5)
+
+#Numerical summaries
+company
+
+#Graphical summaries
+levels(company$Company) = c("Pralus", "Zokoko", "Ocelot", "Matale", "Patric")
+
+barplot(company$Average_Rating ~ levels(company$Company),
+        main = 'Barplot of the Average Rating Within Each Company',
+        xlab = 'Average Rating',
+        ylab = '',
+        horiz = TRUE,
+        las = 1)
+```
+
+From the information above, we can see that Tobago Estate (Pralus), Heirloom Cacao Preservation (Zokoko), Ocelot, Matale, and Patric have the highest average ratings among all other companies. Pralus has a perfect mean rating (4.0) and Patric has mean rating of 3.79.
+
+
+## Final Analysis
+Even though we cannot make a the casual conclusion that any of the factors affect lower/higher chocolate ratings, based on the analysis above, we can say the chocolates have different ratings for different cacao percents, characteristics, companies, and origins. It is quite hard to see a clear relationship between the ratings and the characteristics/companies/origins because they are categorical variables. However, there is a distinct pattern between the ratings and cacao percent; The higher ratings tend to have lower cacao percent is.
+
