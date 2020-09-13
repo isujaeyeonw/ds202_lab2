@@ -1,0 +1,207 @@
+---
+title: "individual1"
+author: "Jaeyeon Won"
+date: "9/9/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Reading in the Data Set
+```{r}
+#Reading in the data set
+choco <- read.csv("https://raw.githubusercontent.com/xdaiISU/ds202materials/master/hwlabs/data/choco.csv") 
+
+#Information
+str(choco) 
+```
+
+## Searching for the Best Chocolates
+We will be exploring what aspects of the chocolates may affect taste. Before setting off to the exploration, answer the following questions.
+
+**1. How are the ratings distributed? Create both a histogram and a boxplot and describe them. Don’t forget to mention outliers, if there are any.**
+```{r}
+#Histogram
+hist(choco$Rating,
+     xlim = c(1,5),
+     main = 'Histogram of Rating',
+     xlab = 'Rating')
+
+#Boxplot
+boxplot(choco$Rating,
+        main = 'Boxplot of Rating',
+        xlab = 'Rating')
+```
+
+The rating of chocolates is on the scale from 1.0 to 5.0 where (1.0-1.9) is for 'Unpleasant', (2.0-2.9) is for 'Disappointing', (3.0-3.49) is for 'Recommended', (3.5-3.9) is for 'Highly Recommended', and (4.0-5.0) is for 'Outstanding'. According to the histogram and boxplot, the distribution of chocolates is a little bit skewed to the left and bimodal with multiple outliers in the lower range below a rating of 2.0. A lot of chocolates are concentrated in the higher rating range of 'Disappointing'(2.6-2.9), higher rating range of 'Recommended' (3.2-3.49), and lower rating range of 'Highly Recommended' (3.5-3.6).One interesting feature is that there was no chocolate with a rating between 3.0 and 3.24 as well as above 4.0. More specifically about the baxplot, the lowest score was 1.0, the highest score was 4.0, and the median score was around 3.25.
+
+
+**2. How does the number of ratings depend on the year? Draw a bar chart of the number of reports.**
+```{r}
+#Changing the type of Date variable (from integer to factor)
+Year = as.factor(choco$Date)
+str(Year)
+
+#Checking the distribution of each level
+table(Year)
+
+#Barplot
+barplot(table(Year),
+        main = 'Barplot of the Number of Ratings in Each Year',
+        xlab = 'Year',
+        ylab = 'Number of Ratings',
+        horiz = TRUE,
+        las = 1)
+```
+
+Based on the barplot above, 2015 had the most rating counts. Conversely, 2020 has the least number of ratings, which makes sense because 2020 has not passed yet, and we still have 4 months left until 2020 ends. There was an increasing trend on the number of ratings from 2006 to 2015. Since 2015, there has been a decreasing trend until now. In 2017, there was relatively low number of reports on the ratings.
+
+
+**3. Do ratings depend on the cacao percentage of a chocolate bar? Create both numerical and graphical summaries, and explain.**
+```{r}
+#Numerical Summary
+#Subsetting
+Unpleasant = choco[(choco$Rating >= 1.0) & (choco$Rating <= 1.9), ]
+Disappointing = choco[(choco$Rating >= 2.0) & (choco$Rating <= 2.9), ]
+Recommended = choco[(choco$Rating >= 3.0) & (choco$Rating <= 3.49), ]
+HighlyRecommended = choco[(choco$Rating >= 3.5) & (choco$Rating <= 3.9), ]
+Outstanding = choco[(choco$Rating >= 4.0) & (choco$Rating <= 5.0), ]
+#Saving the average cocoa percent for each subset in a vector
+mean_cocoa_percent = c(mean(Unpleasant$Cocoa_Percent), 
+                       mean(Disappointing$Cocoa_Percent), 
+                       mean(Recommended$Cocoa_Percent), 
+                       mean(HighlyRecommended$Cocoa_Percent), 
+                       mean(Outstanding$Cocoa_Percent))
+levels = c("Unpleasant", "Disappointing", "Recommended", "HighlyRecommended", "Outstanding")
+dataframe = data.frame(levels, mean_cocoa_percent)
+dataframe
+
+#Graphical Summary
+#Barplot
+levels2 = c("Unplsnt", "Disppnt", "Recmd", "hRecmd", "Outstd")
+barplot(dataframe$mean_cocoa_percent ~ levels2,
+        main = 'Barplot of the Average Cocoa Percent For Each Rating Level',
+        xlab = 'Average Cocoa Percent',
+        ylab = '',
+        horiz = TRUE,
+        las = 1)
+#Scatterplot
+plot(choco$Cocoa_Percent, choco$Rating, 
+     main = "Scatterplot of Cocoa Percent and Ratings",
+     xlab = "Cocoa Percent", ylab = "Ratings")
+```
+
+I firstly grouped the ratings in 5 levels based on the criteria provided. After that, I got the mean cocoa percent for each group. According to the numerical summary and graphical summary of the mean cocoa percent, We can see that as the rating gets lower (from Outstanding to Unpleasant), the mean cocoa percent gets higher. Specifically, Unpleasant rating has mean cocoa percent of 84.29% while Outstanding rating has that of 70.77%. In scatter plot, we can see that the majority of the chocolates in higher ratings tend to have cocoa percent between 60~80% while the middle-rating chocolates include very high cocoa percent (100%). However, since the ratings are ordinal variable, we cannot see a distinct pattern in the scatter plot, opposed to the bar plot.
+
+**Now, we are ready to explore.**
+
+**4. How do different characteristics of the chocolate compare? To elaborate, which characteristics tend to be more favorable and which ones are not? Create both numerical and graphical summaries, and explain.**
+```{r}
+library(dplyr)
+
+#Favorable Characteristics
+#Creating summaries
+good_Characteristics = choco %>% 
+  select(Characteristics1, Rating) %>%
+  group_by(Characteristics1) %>%
+  summarise(Average_Rating = mean(Rating)) %>%
+  arrange(desc(Average_Rating)) %>%
+  top_n(10)
+
+#Numerical summaries
+good_Characteristics
+
+#Graphical summaries
+levels(good_Characteristics$Characteristics1) = c("crdm", "cBanana", "lemon", "lNibs", "ligt color", "mild tart", "pBerry", "srBerry", "smoth", "swSpice", "wDfnd")
+
+barplot(good_Characteristics$Average_Rating ~ levels(good_Characteristics$Characteristics1),
+        main = 'Barplot of the Average Rating Within Each Characteristics',
+        xlab = 'Average Rating',
+        ylab = '',
+        horiz = TRUE,
+        las = 1)
+
+
+
+#Unfavorable Characteristics
+#Creating summaries
+bad_Characteristics = choco %>% 
+  select(Characteristics1, Rating) %>%
+  group_by(Characteristics1) %>%
+  summarise(Average_Rating = mean(Rating)) %>%
+  arrange(Average_Rating) %>%
+  top_n(-10)
+
+#Numerical summaries
+bad_Characteristics
+
+#Graphical summaries
+levels(bad_Characteristics$Characteristics1) = c("nChoco", "chmcl", "hBitter", "klingy", "vNutty", "btCoffee", "fNibs", "malitol", "multiple", "nDscrpt", "sPaper", "sFruit")
+
+barplot(bad_Characteristics$Average_Rating ~ levels(bad_Characteristics$Characteristics1),
+        main = 'Barplot of the Average Rating Within Each Characteristics',
+        xlab = 'Average Rating',
+        ylab = '',
+        horiz = TRUE,
+        las = 1)
+```
+
+We will only look at the observations in Characteristics 1. I got the mean rating for each characteristic in Characteristics 1 and selected the top 10 characteristics to pick the favorable characteristics. The top 10 favorable characteristics are cardamon, chocolate covered banana, distinct lemon, large nibs, ligt color, mild tart, pronounced berry, simple red berry, smoth, and sweet spice. They all have an average rating of 4.0. In contrast, the bottom 10 favorable characteristics (unfavorable) are this is not chocolate, chemical, high intensity bitter, klingy, very nutty, bitter coffee flavor, fresh nibs, malitol, multiple off, flavors, and non descript. The ratings vary from 1.0 to 2.0.
+
+
+**5. Brainstorm two analyses you would like to perform with your teammate. Describe in plain language what comparisons are you making. Create suitable numerical and graphical summaries for your analyses. Describe the results.**
+
+**5.1 How do chocolates have different ratings for different origins?**
+```{r}
+#Creating summaries
+origins = choco %>% 
+  select(Bean_Origin, Rating) %>%
+  group_by(Bean_Origin) %>%
+  summarise(Average_Rating = mean(Rating)) %>%
+  arrange(desc(Average_Rating)) %>%
+  top_n(5)
+
+#Numerical summaries
+origins
+
+#Graphical summaries
+levels(origins$Bean_Origin) = c("Tobago", "ST & P", "S Island", "Congo", "Thailand")
+
+barplot(origins$Average_Rating ~ levels(origins$Bean_Origin),
+        main = 'Barplot of the Average Rating Within Each Bean Origin',
+        xlab = 'Average Rating',
+        ylab = '',
+        horiz = TRUE,
+        las = 1)
+```
+
+Here, we are comparing how different origins have different chocolate ratings. To compare them, I grouped the data set into each bean origin level and calculated the mean rating of each origin. Since we do not want all the origins, I selected the top 5 origins with highest average ratings. From the numerical summary and graphical summary, we can see that Tobago, Sao Tome & Principe, Solomon Islands, Congo, and Thailand have the highest average ratings among all origins. Tobago has a mean rating of 3.652 and Thailand has that of 3.3.
+
+  
+**5.2 How do chocolates have different ratings for different bean companies?**
+```{r}
+#Creating summaries
+company = choco %>% 
+  select(Company, Rating) %>%
+  group_by(Company) %>%
+  summarise(Average_Rating = mean(Rating)) %>%
+  arrange(desc(Average_Rating)) %>%
+  top_n(5)
+
+#Numerical summaries
+company
+
+#Graphical summaries
+levels(company$Company) = c("Pralus", "Zokoko", "Ocelot", "Matale", "Patric")
+
+barplot(company$Average_Rating ~ levels(company$Company),
+        main = 'Barplot of the Average Rating Within Each Company',
+        xlab = 'Average Rating',
+        ylab = '',
+        horiz = TRUE,
+        las = 1)
+```
+
+Here, we are comparing how different companies have different chocolate ratings. To compare them, I grouped the data set into each company level and calculated the mean rating of each company Since we do not want all the origins, I selected the top 5 origins with highest average ratings. From the numerical summary and graphical summary, we can see that Tobago Estate (Pralus), Heirloom Cacao Preservation (Zokoko), Ocelot, Matale, and Patric have the highest average ratings among all companies. Pralus has a perfect mean rating (4.0) and Patric has mean rating of 3.79.
